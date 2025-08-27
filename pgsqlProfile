@@ -1,0 +1,2 @@
+export PATH=$PATH:/usr/pgsql-17/bin/
+export PGDATA=/pgdata/17/data
