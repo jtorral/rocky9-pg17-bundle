@@ -84,9 +84,12 @@ chown -R proxysql:proxysql /pgdata/proxysql
 
 # Setup some ssh stuff
 
-ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
-ssh-keygen -t dsa -f /etc/ssh/ssh_host_ecdsa_key -N ''
-ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ''
+if [ ! -f "/etc/ssh/ssh_host_rsa_key" ]
+then
+   ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
+   ssh-keygen -t dsa -f /etc/ssh/ssh_host_ecdsa_key -N ''
+   ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ''
+fi
 
 echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 

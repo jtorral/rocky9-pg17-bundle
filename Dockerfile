@@ -40,6 +40,8 @@ RUN mkdir -p /pgdata/17/
 RUN chown -R postgres:postgres /pgdata
 RUN chmod 0700 /pgdata
 
+RUN chown -R postgres:postgres /etc/pgpool-II
+
 COPY pg_custom.conf /
 COPY pg_hba.conf /
 COPY pgsqlProfile /
