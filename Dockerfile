@@ -16,6 +16,7 @@ RUN \
   && dnf install -y net-tools \
   && dnf install -y iproute \
   && dnf install -y less \
+  && dnf install -y diffutils \
   && dnf install -y watchdog \
   && dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
   && dnf -qy module disable postgresql \
