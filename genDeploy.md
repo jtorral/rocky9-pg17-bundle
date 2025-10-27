@@ -1,3 +1,4 @@
+
 # genDeploy
 
 ### Jorge Torralba
@@ -29,6 +30,24 @@ It creates a way for you to manage your docker deploy from this Pgpool repo and 
       -w <network>          The name of the network to bind the containers to. You can provide an existing network name or a new one to create."
       -s <subnet>           If creating a new network, provide the first 3 octets for the subnet to use with the new network. For example: 192.168.50"
       -i <image>            docker image to use. If you created your own image tage, set it here."
+
+
+
+
+The above will generate a DockerRunThis.xxx file for managing your deployment.
+
+### Important:
+
+When you generate deploy management  file by running genDeploy, make sure you either run the deploy you just created before  creating another deploy management file. This is because when you run genDeploy, it gathers information from existing docker deploys and networks to determine subnets, ip addreses and so on. Otherwise, you could generate duplicate ip addresses for the deploy DockerRunThis file. 
+
+For example, if you were seting up a Pgpool environment. First generate your postgres dbnodes with genDeply then create them with DockerRunThis. Afterwards, run the genDeploy again for the pgpool nodes, then run the DockerRunThis file for the pgpool nodes.  
+
+Doing the above, ensures that all current networks and ip are taken into consideration when generating the DockerRunThis files.
+
+
+
+## Moving on .....
+
 
 ### For example
 
@@ -424,9 +443,4 @@ The following is the file we generated to manage our docker deploy. It is pretty
        *) usage;;
        ?) usage;;   
     esac
-
-
-
-
-
 

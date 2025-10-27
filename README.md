@@ -1,3 +1,4 @@
+
 # rocky9-pg17-bundle
 
 
@@ -16,6 +17,7 @@ Included packages are
  - haproxy 
  - proxysql pgpool-II-pg17  
  - etcd
+ - pgpool
 
 
 ## Quick start
@@ -31,7 +33,13 @@ https://github.com/jtorral/rocky9-pg17-bundle
     docker build -t rocky9-pg17-bundle .
 
 
-After building the image, a **custom network** named `pgnet` is created to allow communication between the containers.
+You can then run the [genDeploy](https://github.com/jtorral/rocky9-pg17-bundle/blob/main/genDeploy.md) script
+
+To generate the run commands needed for your deployment.  It is advisablex eto use the genDeploy script. However, if you wish to generate your own docker run commands, you will need to follow steps below.
+
+## Optional if not using genDeploy from above.
+
+After building the image, a **custom network** named `pgnet`  or whatever name you decide upon is created to allow communication between the containers.
 
     docker network create pgnet
 
