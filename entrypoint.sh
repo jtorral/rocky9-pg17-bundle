@@ -8,6 +8,16 @@ then
         cp /pg_hba.conf /pgdata/17/data/
         cp /pgsqlProfile /var/lib/pgsql/.pgsql_profile
 
+        if [ -n "$MD5" ]
+        then
+           echo 
+           echo "=========================================================="
+           echo "env MD5 is set. Setting postgres to use md5 authentication"
+           echo "=========================================================="
+           echo 
+           cp /pg_hba_md5.conf /pgdata/17/data/pg_hba.conf
+           echo "password_encryption = md5 " >> /pgdata/17/data/pg_custom.conf
+        fi
 
 	# add ssh keys
 	mkdir -p /var/lib/pgsql/.ssh
@@ -22,23 +32,110 @@ then
         chown postgres:postgres /pgdata/17/data/pg_custom.conf
         chown postgres:postgres /pgdata/17/data/pg_hba.conf
         sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data start
-        sudo -u postgres psql -c "ALTER ROLE postgres PASSWORD 'postgres';"
 
-        if [ -z "$PGSTART" ]
+        if [ ! -z "$PGPASSWORD" ]
         then
-           sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data stop
+           echo 
+           echo "=========================================================="
+           echo "env PGPASSWORD is set. Setting postgres password"
+           echo "=========================================================="
+           echo 
+           sudo -u postgres psql -c "ALTER ROLE postgres PASSWORD '$PGPASSWORD';"
         else
-           sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data restart
+           echo 
+           echo "=========================================================================="
+           echo "env PGPASSWORD is not set. Setting default postgres password of \"postgres\""
+           echo "=========================================================================="
+           echo 
+           sudo -u postgres psql -c "ALTER ROLE postgres PASSWORD 'postgres';"
         fi
-else
-        if [ -z "$PGSTART" ]
+
+        sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data stop
+
+        if [ -n "$PGSTART" ]
         then
-           sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data start
+           echo
+           echo "=========================================================================="
+           echo "env PGSTART is set. Enabling auto starting of postgres on container starts"
+           echo "=========================================================================="
+           echo
+           sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data restart
+        else
+           echo
+           echo "=========================================================="
+           echo "env PGSTART is not set. Skipping auto starting of postgres"
+           echo "=========================================================="
+           echo
+           echo "PGSTART not set. Skipping starting of postgres"
         fi
+
+else
+
+        if [ -n "$PGSTART" ]
+        then
+           echo
+           echo "=========================================================================="
+           echo "env PGSTART is set. Enabling auto starting of postgres on container starts"
+           echo "=========================================================================="
+           echo
+           sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D /pgdata/17/data restart
+        else
+           echo
+           echo "=========================================================="
+           echo "env PGSTART is not set. Skipping auto starting of postgres"
+           echo "=========================================================="
+           echo
+           echo "PGSTART not set. Skipping starting of postgres"
+        fi
+
+
 fi
 
 
+
+# -- Lets create preconfigure or not based on preset env variable
+# -- This is for pgpool. If used for training it gives option of going throuh
+# -- the process instead of just preconfigured files to be used
+
+if [ -z "$DONTPRECONFIG" ]
+then
+
+   echo
+   echo "==============================================================="
+   echo "env DONTPRECONFIG is not set. Applying preconfig to some files "
+   echo "==============================================================="
+   echo
+
+   # -- Setup sudoers
+   echo "postgres ALL=NOPASSWD: /usr/sbin/ip  " >> /etc/sudoers
+   echo "postgres ALL=NOPASSWD: /usr/sbin/arping " >> /etc/sudoers
+
+   # -- Copy some preconfigures scripts
+   cp -p /recovery_1st_stage /etc/pgpool-II/
+   cp -p /follow_primary.sh /etc/pgpool-II/
+   cp -p /pgpool_remote_start /etc/pgpool-II/
+   cp -p /failover.sh /etc/pgpool-II/
+
+else
+
+   echo
+   echo "================================================================================="
+   echo "env DONTPRECONFIG is set. Not applying preconfigs so you have to manually do them"
+   echo 
+   echo "This includes not making changes to :"
+   echo "/etc/sudoers"
+   echo "Modifying the recovery scripts for Pgpool"
+   echo "================================================================================="
+   echo
+
+fi
+
+
+
+
+
 # Install etcd from google
+
 ETCD_VER=v3.5.17
 GOOGLE_URL=https://storage.googleapis.com/etcd
 GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
@@ -58,14 +155,7 @@ cd /tmp
 rm -rf /tmp/etcd-download-test
 
 
-# Copy and setup compiled version of haproxy since only old version is available for this os
-#cp /haproxy /usr/sbin/
-#chmod 0755 /usr/sbin/haproxy
-#mkdir /etc/haproxy
-
-
-
-# Install latest proxysql
+# Install latest proxysql 3.x
 
 cat > /etc/yum.repos.d/proxysql.repo << EOF
 [proxysql]
@@ -82,7 +172,17 @@ cp /proxysql.cnf /etc/
 chown -R proxysql:proxysql /pgdata/proxysql
 
 
-# Setup some ssh stuff
+
+
+
+
+# Setup some preconfigured ssh for trusting user postgres between containers
+
+echo
+echo "======================================================================"
+echo "Doing some ssh voodoo so you don't have to. Even if you dont preconfig"
+echo "======================================================================"
+echo 
 
 if [ ! -f "/etc/ssh/ssh_host_rsa_key" ]
 then
@@ -96,12 +196,11 @@ echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 
 /usr/sbin/sshd
 
+
+
 rm -f /run/nologin
 
 # /bin/bash better option than the tail -f especially without a supervisor
 # consider using dumb_init in the future as a supervisor https://github.com/Yelp/dumb-init
  
 /bin/bash
-
-#exec tail -f /dev/null
-#sleep infinity

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+   echo
+   echo "Usage: $0 <number of pg nodes>  <number of failed nodes to tolerate>"
+   echo
+   exit 0
+fi
+
+N=$1
+F=$2
+
+TR=$(( (2 * F) + 1 ))
+
+Q=$(( (TR / 2) + 1 ))
+
+W_TEMP=$(( TR - N ))
+
+if [ "$W_TEMP" -le 0 ]; then
+    W=0
+else
+    W="$W_TEMP"
+fi
+
+N_TOTAL=$(( N + W ))
+
+Q_FINAL=$(( (N_TOTAL / 2) + 1 ))
+
+MF_FINAL=$(( N_TOTAL - Q_FINAL ))
+
+echo "--- Pgpool-II Quorum Calculation ---"
+echo
+echo "Input Values:"
+echo "  Postgres Nodes (N): $N"
+echo "  Target Failures (F): $F"
+echo "------------------------------------"
+echo
+echo "Core Calculation:"
+echo "  Total Nodes Required (TR = 2F+1): $TR"
+echo "  Witness Nodes Required (W):       $W"
+echo "------------------------------------"
+echo
+echo "Final Cluster State:"
+echo "  Total Voting Nodes (N+W):      $N_TOTAL"
+echo "  Final Quorum Required (Q):     $Q_FINAL"
+echo "  Max Tolerable Failures (MF):   $MF_FINAL"
+echo "  Witness nodes needed (W):      $MF_FINAL"
+echo "  Can we run with failed nodes?  $([ "$MF_FINAL" -ge "$F" ] && echo "YES" || echo "NO")"
