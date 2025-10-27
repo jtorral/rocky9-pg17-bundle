@@ -35,7 +35,7 @@ https://github.com/jtorral/rocky9-pg17-bundle
 
 You can then run the [genDeploy](https://github.com/jtorral/rocky9-pg17-bundle/blob/main/genDeploy.md) script
 
-To generate the run commands needed for your deployment.  It is advisablex eto use the genDeploy script. However, if you wish to generate your own docker run commands, you will need to follow steps below.
+To generate the run commands needed for your deployment.  It is advisable to use the genDeploy script. However, if you wish to generate your own docker run commands, you will need to follow steps below.
 
 ## Optional if not using genDeploy from above.
 
