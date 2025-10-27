@@ -1,35 +1,40 @@
-
 # genDeploy
 
 ### Jorge Torralba
+#### Postgressolutions.com
 
   
-### This is a new file so not use this yet for reference 
-
 This is a home brewed option to docker-compose for use with the docker image you create from this repo.  It is a first go at the project and can use feedback and improvement.  I will eventually be customized to be more flexible and universal.
 
 ## What it does
 
-It creates a way for yoy to manage your docker deploy of this Pgpool repo and it's assets in a way similar to docker-compose by generating a shell script you can use to manage the deploy.
+It creates a way for you to manage your docker deploy from this Pgpool repo and it's assets in a way similar to docker-compose by generating a shell script you can use to manage the deploy.
 
-    Usage:
-            ./build-docker-env [OPTION]
-    
-            -c Name for containers. ( Defaults = pg)
-            -n number of of containers. (default = 1)
-            -s Subnet. First 3 octets only. Example  172.28.100 
-            -w Name for docker network to create (default = pgnet)
-            -y Create the netork. Otherwise, just use the existing network
-            -m Setup postgres environment to use md5 password_encription
-            -p Password for user postgres. If usinmg special characters like #! etc .. escape them with a \ ( default = "postgres" )
-            -i docker image to use. Must be one of the images listed in the repo's README. ( default = rocky9_pg17_pgpool )
-
+    Usage: genDeploy options
+     
+    Description:
+     
+    A for generating docker run files used by images created from the repo this was pulled from.
+    The generated run file can be used to manage your deploy. Similar to what you can do with a docker-compose file.
+     
+    Options:
+      -m                    Setup postgres environment to use md5 password_encription."
+      -p <password>         Password for user postgres. If usinmg special characters like #! etc .. escape them with a \ default = \"postgres\""
+      -n <number>           number of of containers to create. Default is 1. "
+      -r                    Start postgres in containers automatically. Otherwise you have to manually start postgres.
+     
+    Required Options:
+      -c <name>             The name container/node names to use. This should be a prefix. For example if you want 3 postgres containers"
+                            pg1, pg2 and pg3. Simply provide \"pg\" since this script will know how to name them."
+      -w <network>          The name of the network to bind the containers to. You can provide an existing network name or a new one to create."
+      -s <subnet>           If creating a new network, provide the first 3 octets for the subnet to use with the new network. For example: 192.168.50"
+      -i <image>            docker image to use. If you created your own image tage, set it here."
 
 ### For example
 
 If you wish to create a deploy of a single Postgres node with the name  **pgdemo** running on a custom docker network called  **pgdemonet** with a subnet of **192.168.10**  you would run the following .
 
-    ./build-docker-env -s 192.168.10 -w pgdemonet -c pgdemo
+    ./genDeploy -s 192.168.10 -w pgdemonet -c pgdemo
 
 Which would output the following:
 
@@ -42,19 +47,9 @@ Which would output the following:
             docker network create --driver bridge --subnet 192.168.10.0/24 --gateway 192.168.10.1 pgdemonet 
 
 
-If you were to add the **-y** option
-
-    ./build-docker-env -s 192.168.10 -w pgdemonet -c pgdemo -y
-
-This would be the output
-
-    The following file: DockerRunThis.pgdemo,  contains the needed docker run commands
-
-In either case with or without the **-y** a successful run will generate the **DockerRunThis** file with the extension of the container name. **DockerRunThis.pgdemo**
-
 Lets say you want 3 Postgres nodes. Use the **-n** option.
 
-    ./build-docker-env -s 192.168.10 -w pgdemonet -c pgdemo -y -n 3
+    ./genDeploy -s 192.168.10 -w pgdemonet -c pgdemo -n 3
 
 Again, you get the following message
 
@@ -62,29 +57,44 @@ Again, you get the following message
 
 In our example above **DockerRunThis.pgdemo** is our version of a docker-compose file. And from here you can control what to do.
 
-    Usage:
-    ./DockerRunThis.pgdemo [OPTION]
-            -a OPTIONS [start stop run rm rmvolumes delete createnetwork] 
-            -f force the delete of volumes. Otherwise, they are preserved
+    Usage: DockerRunThis.pgdemo [-f] {start|stop|create|rm|rmvolumes|down}
+          
+    Description:
+          
+    Manage your docker deploy generated when you ran build-docker-env
+    
+    Actions:
+      start         Start the docker containers  pgdemo1 pgdemo2 pgdemo3
+      restart       Restart the docker containers  pgdemo1 pgdemo2 pgdemo3
+      stop          Stop the docker containers  pgdemo1 pgdemo2 pgdemo3
+      create        Run the docker conatiners " pgdemo1 pgdemo2 pgdemo3" for the first time
+      rm            Remove the docker containers  pgdemo1 pgdemo2 pgdemo3
+      rmvolumes     Remove the volumes   pgdemo1-pgdata  pgdemo2-pgdata  pgdemo3-pgdata
+      down          Delete everything created with this run file
+       
+    Options:
+      -f            Force delete of volumes. Otherwise preserved
+
 
 
 
 ### Running the containers
 
-     ./DockerRunThis.pgdemo -a run
-     
-    8a80a92ec19f28a19c86b660bd052b217434a3a115122479a5a8e8e67edc64b7
-    384e0a2632f03bca3ed883b453d21b03e598ddab1d442a4fbb2a3a4be02f0ba4
-    000ab649ef2be84f34a3f09a586c864ff363bf6be5547d91ae0465c388e9da19
-    d26534faf200c861bcb4af03d09daa3308ee49108fe6328a14652962c6901223
+    ./DockerRunThis.pgdemo create
+    
+    b6dc4763c2181130435ab8d3daf41722026a3ccbe9f528ce1f1fac522ced8acc
+    95cf392c8ee2a665258ea8b1f219c945f9a6f4d8404573d991f9152ff9859982
+    c76efefc2033a9f9a083680470e608b27622000113cf6ccc418f1ac9260e5a5e
+    7900571f91bee6a108e9df3ef682bcdac0df16321c2ab6e28160d8686dd44fc3
+
 
 
 The above created the Network and the containers
 
-    CONTAINER ID   IMAGE                COMMAND                  CREATED              STATUS              PORTS                                                                                                                         NAMES
-    d26534faf200   rocky9_pg17_pgpool   "/bin/bash -c /entry…"   About a minute ago   Up About a minute   22/tcp, 80/tcp, 443/tcp, 9898/tcp, 0.0.0.0:6436->5432/tcp, [::]:6436->5432/tcp, 0.0.0.0:9996->9999/tcp, [::]:9996->9999/tcp   pgdemo3
-    000ab649ef2b   rocky9_pg17_pgpool   "/bin/bash -c /entry…"   About a minute ago   Up About a minute   22/tcp, 80/tcp, 443/tcp, 9898/tcp, 0.0.0.0:6435->5432/tcp, [::]:6435->5432/tcp, 0.0.0.0:9995->9999/tcp, [::]:9995->9999/tcp   pgdemo2
-    384e0a2632f0   rocky9_pg17_pgpool   "/bin/bash -c /entry…"   About a minute ago   Up About a minute   22/tcp, 80/tcp, 443/tcp, 9898/tcp, 0.0.0.0:6434->5432/tcp, [::]:6434->5432/tcp, 0.0.0.0:9994->9999/tcp, [::]:9994->9999/tcp   pgdemo1
+    CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS          PORTS                                                                                                                                                                                                                   NAMES
+    7900571f91be   rocky9-pg17-bundle   "/bin/bash -c /entry…"   34 seconds ago   Up 34 seconds   22/tcp, 80/tcp, 443/tcp, 2379-2380/tcp, 5000-5001/tcp, 6032-6033/tcp, 6132-6133/tcp, 7000/tcp, 8008/tcp, 8432/tcp, 9898/tcp, 0.0.0.0:6437->5432/tcp, [::]:6437->5432/tcp, 0.0.0.0:9997->9999/tcp, [::]:9997->9999/tcp   pgdemo3
+    c76efefc2033   rocky9-pg17-bundle   "/bin/bash -c /entry…"   35 seconds ago   Up 34 seconds   22/tcp, 80/tcp, 443/tcp, 2379-2380/tcp, 5000-5001/tcp, 6032-6033/tcp, 6132-6133/tcp, 7000/tcp, 8008/tcp, 8432/tcp, 9898/tcp, 0.0.0.0:6436->5432/tcp, [::]:6436->5432/tcp, 0.0.0.0:9996->9999/tcp, [::]:9996->9999/tcp   pgdemo2
+    95cf392c8ee2   rocky9-pg17-bundle   "/bin/bash -c /entry…"   35 seconds ago   Up 35 seconds   22/tcp, 80/tcp, 443/tcp, 2379-2380/tcp, 5000-5001/tcp, 6032-6033/tcp, 6132-6133/tcp, 7000/tcp, 8008/tcp, 8432/tcp, 9898/tcp, 0.0.0.0:6435->5432/tcp, [::]:6435->5432/tcp, 0.0.0.0:9995->9999/tcp, [::]:9995->9999/tcp   pgdemo1
 
 And the **pgdemonet** network
 
@@ -112,18 +122,21 @@ You can see the volumes above for pgdemo1, 2 and 3
 
 ### Stopping the containers
 
-    ./DockerRunThis.pgdemo -a stop
+    ./DockerRunThis.pgdemo stop
 
 You can see they are stopped now
 
-    ./DockerRunThis.pgdemo -a stop
+    ./DockerRunThis.pgdemo stop
+    Stoping containers  pgdemo1 pgdemo2 pgdemo3
     pgdemo1
     pgdemo2
     pgdemo3
 
+
 ### Starting the containers
 
-    ./DockerRunThis.pgdemo -a start
+    ./DockerRunThis.pgdemo start
+    Starting containers  pgdemo1 pgdemo2 pgdemo3
     pgdemo1
     pgdemo2
     pgdemo3
@@ -132,18 +145,24 @@ You can see they are stopped now
 
 Similar to docker-compose down 
 
-    ./DockerRunThis.pgdemo -a delete -f 
+    ./DockerRunThis.pgdemo down -f
 
 We used the -f option to force delete the volumes
 
-    ./DockerRunThis.pgdemo -a delete -f 
+     ./DockerRunThis.pgdemo down -f
+     
+    Attempting to delete entire depoloy 
+    Stoping containers  pgdemo1 pgdemo2 pgdemo3
     pgdemo1
     pgdemo2
     pgdemo3
+    Removing containers  pgdemo1 pgdemo2 pgdemo3
     pgdemo1
     pgdemo2
     pgdemo3
-    pgdemonet
+    Removing network demonet
+    demonet
+    Removing volumes   pgdemo1-pgdata  pgdemo2-pgdata  pgdemo3-pgdata
     pgdemo1-pgdata
     pgdemo2-pgdata
     pgdemo3-pgdata
@@ -160,14 +179,21 @@ For example, lets recreate everything again.
 
 Now lets delete the environment **without the -f** option
 
-    ./DockerRunThis.pgdemo -a delete 
+    ./DockerRunThis.pgdemo down 
+    
+    Attempting to delete entire depoloy 
+    Stoping containers  pgdemo1 pgdemo2 pgdemo3
     pgdemo1
     pgdemo2
     pgdemo3
+    Removing containers  pgdemo1 pgdemo2 pgdemo3
     pgdemo1
     pgdemo2
     pgdemo3
-    pgdemonet
+    Removing network demonet
+    demonet
+    Preserving volumes. Use -f to for removal or run  rmvolumes
+
 
 Notice the volumes were not deleted
 
@@ -186,11 +212,13 @@ Notice the volumes were not deleted
 
 To actually delete the volumes after destroying the environment, simply run the following.
 
-    ./DockerRunThis.pgdemo -a rmvolumes
+    ./DockerRunThis.pgdemo rmvolumes
 
 Which removes the volumes only
 
-    ./DockerRunThis.pgdemo -a rmvolumes
+    ./DockerRunThis.pgdemo rmvolumes
+    
+    Running docker volume rm pgdemo1-data pgdemo2-data pgdemo3-data
     pgdemo1-pgdata
     pgdemo2-pgdata
     pgdemo3-pgdata
@@ -202,39 +230,31 @@ Which removes the volumes only
 ### You want to build the environment and use an existing Network
 
 
-If you wish to create a deploy of a single Postgres node with the name  **pgdemo** running on a custom docker network called  **poolnet** with a subnet of **192.168.10**  you would run the following .
+If you wish to create a deploy of a single Postgres node with the name  **pgdemo** running on a custom docker network called  **poolnet**  you would run the following .
 
-In the above example, the network poolnet already exists. But it has a subnet different than 192.168.10
-
-
-**./build-docker-env -s 192.168.10 -w poolnet -c pgdemo -y -n 3**
-
-You will get the following message
-
-    ERROR -- The network "poolnet" already exist. run without -y option to use this network
+In the above example, the network poolnet already exists. 
 
 
-Lets run the command without the **-y** to force it to use the existing **poolnet** network
+**./genDeploy -w poolnet -c pgdemo -n 3**
 
-This is the output
+When building the containers, you would see the following. Notice the first line
 
-    ./build-docker-env -s 192.168.10 -w poolnet -c pgdemo -n 3
+    ./DockerRunThis.pgdemo create
     
-    INFO -- The network poolnet already exists. Using subnet 172.28.0 associated with poolnet and ignoring 192.168.10
-    
-    The following file: DockerRunThis.pgdemo,  contains the needed docker run commands
+    Using existing network poolnet No need to create the network at this time.
+    9d510265e8ba6bb6227d0cc748a910f5a586377e9c65be4f2c5ff2593485567c
+    5ef7fb317ddc50dc445353db0d01f777c1699481589e8fb9f459330e9b81be22
+    3faf8e971e97f9e322c38e8f5e30e9abce0dd3bc168ffe71ddc6e6b59139d0dd
 
-As you can see, it ignored your custom subnet and used the one already associated with the **poolnet** network
 
-It also assigns the next available IP's from the subnet to your containers
 
 If you were to looks at the DockerRunThis file, you would see the following in it
 
-    docker run -p 6434:5432 -p 9994:9999 --env=PGPASSWORD=postgres -v pgdemo1-pgdata:/pgdata --hostname=pgdemo1 --network=poolnet --name=pgdemo1 --privileged --ip 172.28.0.14  -dt rocky9_pg17_pgpool
-    docker run -p 6435:5432 -p 9995:9999 --env=PGPASSWORD=postgres -v pgdemo2-pgdata:/pgdata --hostname=pgdemo2 --network=poolnet --name=pgdemo2 --privileged --ip 172.28.0.15  -dt rocky9_pg17_pgpool
-    docker run -p 6436:5432 -p 9996:9999 --env=PGPASSWORD=postgres -v pgdemo3-pgdata:/pgdata --hostname=pgdemo3 --network=poolnet --name=pgdemo3 --privileged --ip 172.28.0.16  -dt rocky9_pg17_pgpool
+    docker run -p 6435:5432 -p 9995:9999 --env=PGPASSWORD=postgres -v pgdemo1-pgdata:/pgdata --hostname=pgdemo1 --network=poolnet --name=pgdemo1 --privileged --ip 172.28.0.14   -dt rocky9-pg17-bundle 
+    docker run -p 6436:5432 -p 9996:9999 --env=PGPASSWORD=postgres -v pgdemo2-pgdata:/pgdata --hostname=pgdemo2 --network=poolnet --name=pgdemo2 --privileged --ip 172.28.0.15   -dt rocky9-pg17-bundle 
+    docker run -p 6437:5432 -p 9997:9999 --env=PGPASSWORD=postgres -v pgdemo3-pgdata:/pgdata --hostname=pgdemo3 --network=poolnet --name=pgdemo3 --privileged --ip 172.28.0.16   -dt rocky9-pg17-bundle 
 
-Notice the ip's assigned to your new containers.  That is because the existing container on the poolnet network have ip's assigned already.
+Notice the ip's assigned to your new containers.  Since the network already existed, the genDeploy extracts the next available IP from the network.
 
 
     d7e53402587c   2d2845e69ba1   "/bin/bash -c /entry…"   9 days ago   Up 34 hours   22/tcp, 80/tcp, 443/tcp, 9898/tcp, 0.0.0.0:6432->5432/tcp, [::]:6432->5432/tcp, 0.0.0.0:9992->9999/tcp, [::]:9992->9999/tcp   pg2
@@ -245,11 +265,12 @@ A docker network inspect of of the pool net
 
     docker network inspect poolnet --format '{{range .Containers}}{{.Name}} - {{.IPv4Address}}{{"\n"}}{{end}}'
 
-Shows us the ip's already in use
+Lists the ip's already in use
 
-    docker network inspect poolnet --format '{{range .Containers}}{{.Name}} - {{.IPv4Address}}{{"\n"}}{{end}}'
     pg1 - 172.28.0.11/16
     pg2 - 172.28.0.12/16
+    pg3 - 172.28.0.13/16
+
 
 
 And as you can see a few lines up, our pgdemo containers start with ip of **172.28.0.14**  We could modify the script to start at 13, but I wanted a buffer in there
@@ -264,90 +285,148 @@ The following is the file we generated to manage our docker deploy. It is pretty
 
     #!/bin/bash
     
-    
     function runNetwork() {
-            docker network create --driver bridge --subnet 192.168.10.0/24 --gateway 192.168.10.1 pgdemonet 
+            echo -e "Using existing network "poolnet" No need to create the network at this time." 
     }
-    
     
     function runContainers() {
             runNetwork
-            docker run -p 6434:5432 -p 9994:9999 --env=PGPASSWORD=postgres -v pgdemo1-pgdata:/pgdata --hostname=pgdemo1 --network=pgdemonet --name=pgdemo1 --privileged --ip 192.168.10.11  -dt rocky9_pg17_pgpool 
-            docker run -p 6435:5432 -p 9995:9999 --env=PGPASSWORD=postgres -v pgdemo2-pgdata:/pgdata --hostname=pgdemo2 --network=pgdemonet --name=pgdemo2 --privileged --ip 192.168.10.12  -dt rocky9_pg17_pgpool 
-            docker run -p 6436:5432 -p 9996:9999 --env=PGPASSWORD=postgres -v pgdemo3-pgdata:/pgdata --hostname=pgdemo3 --network=pgdemonet --name=pgdemo3 --privileged --ip 192.168.10.13  -dt rocky9_pg17_pgpool 
+            docker run -p 6435:5432 -p 9995:9999 --env=PGPASSWORD=postgres -v pgdemo1-pgdata:/pgdata --hostname=pgdemo1 --network=poolnet --name=pgdemo1 --privileged --ip 172.28.0.14   -dt rocky9-pg17-bundle 
+            docker run -p 6436:5432 -p 9996:9999 --env=PGPASSWORD=postgres -v pgdemo2-pgdata:/pgdata --hostname=pgdemo2 --network=poolnet --name=pgdemo2 --privileged --ip 172.28.0.15   -dt rocky9-pg17-bundle 
+            docker run -p 6437:5432 -p 9997:9999 --env=PGPASSWORD=postgres -v pgdemo3-pgdata:/pgdata --hostname=pgdemo3 --network=poolnet --name=pgdemo3 --privileged --ip 172.28.0.16   -dt rocky9-pg17-bundle 
     }
     
-    
-    function stopContainers() {
-            docker stop  pgdemo1 pgdemo2 pgdemo3
+    function restartContainers() {
+            echo -e "Restarting containers  pgdemo1 pgdemo2 pgdemo3"
+            docker restart  pgdemo1 pgdemo2 pgdemo3
     }
-    
     
     function startContainers() {
+            echo -e "Starting containers  pgdemo1 pgdemo2 pgdemo3"
             docker start  pgdemo1 pgdemo2 pgdemo3
     }
     
+    function stopContainers() {
+            echo -e "Stoping containers  pgdemo1 pgdemo2 pgdemo3"
+            docker stop  pgdemo1 pgdemo2 pgdemo3
+    }
     
     function removeContainers() {
+            echo -e "Removing containers  pgdemo1 pgdemo2 pgdemo3"
             docker rm  pgdemo1 pgdemo2 pgdemo3
     }
     
-    
     function removeNetwork() {
-            docker network rm pgdemonet
+            if [ 1 -eq 0 ]; then
+                    echo -e "Removing network poolnet"
+                    docker network rm poolnet
+            else
+                    echo -e
+                    echo -e "This DockerRunFile: DockerRunThis.pgdemo was generated using an existing network. Therefore, the network cannot be removed."
+                    echo -e "If you are certain no other containers are using this network, you can manually remove it by running the following command:"
+                    echo -e "\tdocker network rm poolnet"
+                    echo -e "If you do remove the network, regenerate this DockerRunFile again using the following command:"
+                    echo -e "\t"./genDeploy -w poolnet -c pgdemo -i rocky9-pg17-bundle -n 3""
+                    echo -e
+                    echo -e "Also, feel free to modify this file: DockerRunThis.pgdemo and adjust as needed"
+                    echo -e
+            fi
     }
     
-    
     function removeVolumes() {
+            echo -e "Removing volumes   pgdemo1-pgdata  pgdemo2-pgdata  pgdemo3-pgdata"
             docker volume rm   pgdemo1-pgdata  pgdemo2-pgdata  pgdemo3-pgdata
     }
     
+    function usage() {
+    
+    cat << EOF
+    
+    Usage: DockerRunThis.pgdemo [-f] {start|stop|create|rm|rmvolumes|down}
+          
+    Description:
+          
+    Manage your docker deploy generated when you ran build-docker-env
+    
+    Actions:
+      start         Start the docker containers  pgdemo1 pgdemo2 pgdemo3
+      restart       Restart the docker containers  pgdemo1 pgdemo2 pgdemo3
+      stop          Stop the docker containers  pgdemo1 pgdemo2 pgdemo3
+      create        Run the docker conatiners " pgdemo1 pgdemo2 pgdemo3" for the first time
+      rm            Remove the docker containers  pgdemo1 pgdemo2 pgdemo3
+      rmvolumes     Remove the volumes   pgdemo1-pgdata  pgdemo2-pgdata  pgdemo3-pgdata
+      down          Delete everything created with this run file
+       
+    Options:
+      -f            Force delete of volumes. Otherwise preserved
+       
+    EOF
+    exit
+    }
     
     function deleteEnv() {
+            echo -e "Attempting to delete entire depoloy "
             stopContainers
             removeContainers
             removeNetwork
             if [ $force -eq 1 ]; then
                     removeVolumes
             fi
-    }
-    
-    
-    function usage() {
-            echo -e "Usage:"
-            echo -e "$0 [OPTION]"
-            echo -e "       -a OPTIONS [start stop run rm rmvolumes delete createnetwork] "
-            echo -e "       -f force the delete of volumes. Otherwise, they are preserved"
-            exit 
+            if [ $force -eq 0 ]; then
+                    echo -e "Preserving volumes. Use -f to for removal or run  rmvolumes"
+            fi
     }
     
     
     force=0
     doThis=""
     
-    while getopts a:f name
-    do
-       case $name in
-          a) doThis="$OPTARG";;
-          f) force=1;;
-          *) usage;;
-          ?) usage;;
-       esac
+    for arg in "$@"; do
+        case "$arg" in
+            -f)
+                force=1
+                ;;
+            -*)
+                echo "Error: Unknown option $arg" >&2
+                usage
+                ;;
+            start|restart|stop|create|rm|rmvolumes|down)
+                # This block explicitly catches valid actions
+                if [ -z "$doThis" ]; then 
+                    doThis="$arg"
+                else
+                    echo "Error: Only one action is allowed." >&2
+                    usage
+                fi
+                ;; 
+            *)
+                # This catches any other non-option argument (e.g., 'hello')
+                echo "Error: Invalid action or argument: $arg" >&2
+                usage
+                ;; 
+        esac
     done
-    shift $(($OPTIND - 1))
     
-    
+    if [ -z "$doThis" ]; then
+        echo "Error: Must specify an action." >&2
+        usage
+    fi
     
     
     case $doThis in
        "start") startContainers;;  
-       "stop") stopContainers;;  
-       "run") runContainers;;  
-       "rm") removeContainers;;  
-       "rmvolumes") removeVolumes;;  
-       "createnetwork") createNetwork;;  
-       "delete") deleteEnv;;  
+       "restart") restartContainers;;  
+       "stop") stopContainers;;
+       "create") runContainers;;
+       "rm") removeContainers;;
+       "rmvolumes") removeVolumes;;
+       "down") deleteEnv;;
        *) usage;;
-       ?) usage;;
-    esac 
+       ?) usage;;   
+    esac
+
+
+
+
+
 
