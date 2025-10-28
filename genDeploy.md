@@ -11,18 +11,23 @@ This is a home brewed option to docker-compose for use with the docker image you
 
 It creates a way for you to manage your docker deploy from this Pgpool repo and it's assets in a way similar to docker-compose by generating a shell script you can use to manage the deploy.
 
+
     Usage: genDeploy options
      
     Description:
      
     A for generating docker run files used by images created from the repo this was pulled from.
     The generated run file can be used to manage your deploy. Similar to what you can do with a docker-compose file.
+    
+    When used with a -g option. It can be used for any generic version of postgres images. It will only create run commands with network, ip and nodenames.
+    Good if you just want to deploy multiple containers of your own.
      
     Options:
       -m                    Setup postgres environment to use md5 password_encription."
       -p <password>         Password for user postgres. If usinmg special characters like #! etc .. escape them with a \ default = \"postgres\""
       -n <number>           number of of containers to create. Default is 1. "
       -r                    Start postgres in containers automatically. Otherwise you have to manually start postgres.
+      -g                    Use as a generic run-command generator for images not part of this repo.                  
      
     Required Options:
       -c <name>             The name container/node names to use. This should be a prefix. For example if you want 3 postgres containers"
@@ -30,8 +35,7 @@ It creates a way for you to manage your docker deploy from this Pgpool repo and 
       -w <network>          The name of the network to bind the containers to. You can provide an existing network name or a new one to create."
       -s <subnet>           If creating a new network, provide the first 3 octets for the subnet to use with the new network. For example: 192.168.50"
       -i <image>            docker image to use. If you created your own image tage, set it here."
-
-
+    
 
 
 The above will generate a DockerRunThis.xxx file for managing your deployment.

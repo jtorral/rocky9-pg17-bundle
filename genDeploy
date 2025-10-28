@@ -22,12 +22,16 @@ Description:
  
 A for generating docker run files used by images created from the repo this was pulled from.
 The generated run file can be used to manage your deploy. Similar to what you can do with a docker-compose file.
+
+When used with a -g option. It can be used for any generic version of postgres images. It will only create run commands with network, ip and nodenames.
+Good if you just want to deploy multiple containers of your own.
  
 Options:
   -m 			Setup postgres environment to use md5 password_encription."
   -p <password>		Password for user postgres. If usinmg special characters like #! etc .. escape them with a \ default = \"postgres\""
   -n <number>		number of of containers to create. Default is 1. "
   -r			Start postgres in containers automatically. Otherwise you have to manually start postgres.
+  -g			Use as a generic run-command generator for images not part of this repo.                  
  
 Required Options:
   -c <name>		The name container/node names to use. This should be a prefix. For example if you want 3 postgres containers"
@@ -48,6 +52,17 @@ echo -e "\tdocker network create \
 --subnet $subnet \
 --gateway $gateway \
 $networkName " >> $dockerRunFile
+}
+
+
+function createGenericNode() {
+echo -e "\tdocker run \
+-p $pgPortMap:5432 \
+--hostname=$nodeName \
+--network=$networkName \
+--name=$nodeName \
+--ip $nodeIp \
+-dt $dockerImage " >> $dockerRunFile
 }
 
 
@@ -214,9 +229,10 @@ createTheNetwork=0
 numNodes=1
 md5=""
 pgstart=""
+generic=0
 
 # ---  Here we go ....
-while getopts c:n:s:w:p:i:mr name
+while getopts c:n:s:w:p:i:mrg name
 do      
    case $name in
       c) nodeName="$OPTARG";;
@@ -224,6 +240,7 @@ do
       s) sub="$OPTARG";; 
       w) networkName="$OPTARG";; 
       m) md5="--env=MD5=1";; 
+      g) generic=1;;
       r) pgstart="--env=PGSTART=1";; 
       p) pgPassword="$OPTARG";; 
       i) dockerImage="$OPTARG";; 
@@ -391,7 +408,12 @@ for (( i=1; i<=$numNodes; i++ )); do
    poolPortMap=$(( nextPgPoolPort + $i ))
    nodeList="${nodeList} ${nodeName}"
    volumeList="${volumeList}  ${nodeName}-pgdata"
-   createNode
+   if [ $generic -eq 0 ]; then
+      createNode
+   else
+      createGenericNode
+   fi
+
 done
 
 echo -e "}\n" >> $dockerRunFile
