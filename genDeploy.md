@@ -1,4 +1,5 @@
 
+
 # genDeploy
 
 ### Jorge Torralba
@@ -9,7 +10,9 @@ This is a home brewed option to docker-compose for use with the docker image you
 
 ## What it does
 
-It creates a way for you to manage your docker deploy from this Pgpool repo and it's assets in a way similar to docker-compose by generating a shell script you can use to manage the deploy.
+It creates a way for you to manage your docker deploy from this Pgpool repo and it's assets in a way similar to docker-compose by generating a file called **DockerRunThis** you can use to manage the deploy.
+
+You can also use it in generic mode which allows you to generate the DockerRunThis file for other Postgres docker images besides the one in this repo.
 
 
     Usage: genDeploy options
@@ -299,7 +302,28 @@ Lists the ip's already in use
 And as you can see a few lines up, our pgdemo containers start with ip of **172.28.0.14**  We could modify the script to start at 13, but I wanted a buffer in there
 
 
+## Use as generic generator
 
+When used with the -g option as mentioned above, you just generate multiple container docker run commands to manage. For example.
+
+
+    /genDeploy -w poolnet -c generic -n 10 -g -i myimage
+
+
+Would generate a DockerRunThis file with the following run commands:
+
+    docker run -p 6439:5432 --hostname=generic1 --network=poolnet --name=generic1 --ip 172.28.0.17 -dt myimage
+    docker run -p 6440:5432 --hostname=generic2 --network=poolnet --name=generic2 --ip 172.28.0.18 -dt myimage
+    docker run -p 6441:5432 --hostname=generic3 --network=poolnet --name=generic3 --ip 172.28.0.19 -dt myimage
+    docker run -p 6442:5432 --hostname=generic4 --network=poolnet --name=generic4 --ip 172.28.0.20 -dt myimage
+    docker run -p 6443:5432 --hostname=generic5 --network=poolnet --name=generic5 --ip 172.28.0.21 -dt myimage
+    docker run -p 6444:5432 --hostname=generic6 --network=poolnet --name=generic6 --ip 172.28.0.22 -dt myimage
+    docker run -p 6445:5432 --hostname=generic7 --network=poolnet --name=generic7 --ip 172.28.0.23 -dt myimage
+    docker run -p 6446:5432 --hostname=generic8 --network=poolnet --name=generic8 --ip 172.28.0.24 -dt myimage
+    docker run -p 6447:5432 --hostname=generic9 --network=poolnet --name=generic9 --ip 172.28.0.25 -dt myimage
+    docker run -p 6448:5432 --hostname=generic10 --network=poolnet --name=generic10 --ip 172.28.0.26 -dt myimage
+
+This just makes things a little easier to manage.
 
 ## The DockerRunThis file. Whats in it?
 
@@ -447,4 +471,6 @@ The following is the file we generated to manage our docker deploy. It is pretty
        *) usage;;
        ?) usage;;   
     esac
+
+
 
