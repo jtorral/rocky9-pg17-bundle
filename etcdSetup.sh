@@ -73,6 +73,15 @@ patroniVarFile="/pgha/config/patroniVars"
 #patroniVarFile="/tmp/patroniVars"
 patroniConf="/pgha/config/patroni.yaml"
 #patroniConf="/tmp/patroni.yaml"
+pgprofile="/var/lib/pgsql/.pgsql_profile"
+
+
+# ---------------------------------------------------------------------------------------
+# Source the postgres profile so we can use the settings when calling this script via ssh
+# otherwise, the simple ssh wont know env variables for use postgres
+# ---------------------------------------------------------------------------------------
+
+source $pgprofile
 
 if [ ! -d "$confBaseDir" ]; then
     echo -e

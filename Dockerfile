@@ -75,6 +75,14 @@ RUN chown postgres:postgres /etcdSetup.sh
 RUN chown postgres:postgres /patroniSetup.sh
 RUN chown postgres:postgres /createRoles.sh
 
+RUN chmod 755 /recovery_1st_stage
+RUN chmod 755 /follow_primary.sh
+RUN chmod 755 /pgpool_remote_start
+RUN chmod 755 /failover.sh
+RUN chmod 755 /etcdSetup.sh
+RUN chmod 755 /patroniSetup.sh
+RUN chmod 755 /createRoles.sh
+
 
 EXPOSE 22 80 443 5432 2379 2380 6032 6033 6132 6133 8432 5000 5001 8008 9999 9898 7000
 
