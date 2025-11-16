@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# Postgressolutions.com
+# Jorge Torralba
+# Nov 16, 2025
+#
+# This file is for personal, self paced training, testing and development. If you plan to utilize this as a base for creating additional software, 
+# Training material, tutorials, or public distribution you must give credit to postgressolutions.com and Jorge Torralba. 
+# Your cooperation helps support the creation of future tools and educational content.
+# Thank you for understanding.
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 function usage() {
 cat << EOF
 
