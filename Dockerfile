@@ -38,11 +38,18 @@ RUN \
   && dnf install -y pgpool-II-pg17-extensions
 
 RUN mkdir -p /pgdata/17/
-
 RUN chown -R postgres:postgres /pgdata
 RUN chmod 0700 /pgdata
 
 RUN chown -R postgres:postgres /etc/pgpool-II
+
+RUN mkdir -p /var/log/etcd
+RUN mkdir -p /var/log/patroni
+RUN chown -R postgres:postgres /var/log/etcd
+RUN chown -R postgres:postgres /var/log/patroni
+
+RUN mkdir -p /pgha/{config,certs,data/{etcd,postgres}}
+RUN chown -R postgres:postgres /pgha
 
 COPY pg_custom.conf /
 COPY pg_hba.conf /
@@ -56,11 +63,17 @@ COPY recovery_1st_stage /
 COPY follow_primary.sh /
 COPY pgpool_remote_start /
 COPY failover.sh /
+COPY etcdSetup.sh /
+COPY patroniSetup.sh /
+COPY createRoles.sh /
 
 RUN chown postgres:postgres /recovery_1st_stage
 RUN chown postgres:postgres /follow_primary.sh
 RUN chown postgres:postgres /pgpool_remote_start
 RUN chown postgres:postgres /failover.sh
+RUN chown postgres:postgres /etcdSetup.sh
+RUN chown postgres:postgres /patroniSetup.sh
+RUN chown postgres:postgres /createRoles.sh
 
 
 EXPOSE 22 80 443 5432 2379 2380 6032 6033 6132 6133 8432 5000 5001 8008 9999 9898 7000
