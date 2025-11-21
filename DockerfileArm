@@ -46,13 +46,14 @@ RUN chown -R postgres:postgres /pgdata
 RUN chmod 0700 /pgdata
 
 RUN chown -R postgres:postgres /etc/pgpool-II
+RUN chown -R postgres:postgres /etc/pgbackrest.conf
 
 RUN mkdir -p /var/log/etcd
 RUN mkdir -p /var/log/patroni
 RUN chown -R postgres:postgres /var/log/etcd
 RUN chown -R postgres:postgres /var/log/patroni
 
-RUN mkdir -p /pgha/{config,certs,data/{etcd,postgres}}
+RUN mkdir -p /pgha/{config,certs,data/{etcd,postgres,pgbackrest}}
 RUN chown -R postgres:postgres /pgha
 
 COPY pg_custom.conf /

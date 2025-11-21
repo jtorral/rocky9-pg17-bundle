@@ -172,7 +172,43 @@ cp /proxysql.cnf /etc/
 chown -R proxysql:proxysql /pgdata/proxysql
 
 
+# Preconfigure some pgbackrest stuff
 
+echo 
+echo "====================================================================="
+echo "Setting up pgbackrest directory structue and file privs to use /pgha/"
+echo "centralized location and data"
+echo "====================================================================="
+
+if [ ! -f "/pgha/config/pgbackrest.conf" ]
+then 
+   touch /pgha/config/pgbackrest.conf
+   chown postgres:postgres /pgha/config/pgbackrest.conf
+   mv /etc/pgbackrest.conf /etc/pgbackrest.conf.save
+   ln -s /pgha/config/pgbackrest.conf /etc/pgbackrest.conf
+fi
+
+
+# Setup ssh for root using same keys as postgres
+
+echo
+echo "========================================================================"
+echo "This is NOT secure. But this is for our own Docker environment so I "
+echo "guess it's ok. We are setting up ssh for roo as well usingthe same keys"
+echo "we use for user postgres. Just being lazy. Change afterwards if you want"
+echo "========================================================================"
+echo 
+
+if [ ! -f "/root/.ssh/id_rsa" ]
+then
+   mkdir -p /root/.ssh
+   cp /id_rsa /root/.ssh
+   cp /id_rsa.pub /root/.ssh
+   cp /authorized_keys /root/.ssh
+   chown -R root:root /root/.ssh
+   chmod 0700 /root/.ssh
+   chmod 0600 /root/.ssh/*
+fi
 
 
 
