@@ -182,6 +182,9 @@ echo "====================================================================="
 
 if [ ! -f "/pgha/config/pgbackrest.conf" ]
 then 
+   echo
+   echo "Setting up necessary steps to use one pgbackrest.conf in /pgha/config"
+   echo
    touch /pgha/config/pgbackrest.conf
    chown postgres:postgres /pgha/config/pgbackrest.conf
    mv /etc/pgbackrest.conf /etc/pgbackrest.conf.save
@@ -201,6 +204,9 @@ echo
 
 if [ ! -f "/root/.ssh/id_rsa" ]
 then
+   echo
+   echo "Copying postgres ssh keys to user root so root can ssh accross nodes as well"
+   echo
    mkdir -p /root/.ssh
    cp /id_rsa /root/.ssh
    cp /id_rsa.pub /root/.ssh
@@ -222,6 +228,9 @@ echo
 
 if [ ! -f "/etc/ssh/ssh_host_rsa_key" ]
 then
+   echo 
+   echo "Running sopme ssh-keygen commands. Look at file entrypoint.sh for more details."
+   echo 
    ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
    ssh-keygen -t dsa -f /etc/ssh/ssh_host_ecdsa_key -N ''
    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ''
