@@ -71,6 +71,8 @@ COPY failover.sh /
 COPY etcdSetup.sh /
 COPY patroniSetup.sh /
 COPY createRoles.sh /
+COPY startParoni /
+COPY stopParoni /
 
 RUN chown postgres:postgres /recovery_1st_stage
 RUN chown postgres:postgres /follow_primary.sh
@@ -79,6 +81,8 @@ RUN chown postgres:postgres /failover.sh
 RUN chown postgres:postgres /etcdSetup.sh
 RUN chown postgres:postgres /patroniSetup.sh
 RUN chown postgres:postgres /createRoles.sh
+RUN chown postgres:postgres /startPatroni
+RUN chown postgres:postgres /stopPatroni
 
 RUN chmod 755 /recovery_1st_stage
 RUN chmod 755 /follow_primary.sh
@@ -87,6 +91,8 @@ RUN chmod 755 /failover.sh
 RUN chmod 755 /etcdSetup.sh
 RUN chmod 755 /patroniSetup.sh
 RUN chmod 755 /createRoles.sh
+RUN chmod 755 /startPatroni
+RUN chmod 755 /stopPatroni
 
 
 EXPOSE 22 80 443 5432 2379 2380 6032 6033 6132 6133 8432 5000 5001 8008 9999 9898 7000

@@ -1,0 +1,7 @@
+#!/bin/bash
+patroni /pgha/config/patroni.yaml >> /var/log/patroni/patroni.log 2>&1 &
+echo $! > /pgha/patroni.pid
+echo
+echo "Patroni started with pid $(cat /pgha/patroni.pid)"
+echo "Use stopPatroni to sop it."
+echo

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ ! -f "/pgha/patroni.pid" ];
+then
+   echo
+   echo "Pid file /pgha/patroni.pid was not found. Is patroni running?"
+   echo "Try running \"pgrep patroni\" and killing the returnd pid."
+   echo
+   exit 1
+fi
+
+kill -TERM $(cat /pgha/patroni.pid)
+rm -f /pgha/patroni.pid
+echo
+echo "Patroni service stopped. /pgha/patroni.pid has been removed"
+echo
