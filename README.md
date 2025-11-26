@@ -32,6 +32,10 @@ https://github.com/jtorral/rocky9-pg17-bundle
 
     docker build -t rocky9-pg17-bundle .
 
+If you run into issues it could be related to versions and dependencies on OS images and packges. Try the following build command instead to identify the errors
+
+    docker build --progress=plain -t rocky9-pg17-bundle .
+
 
 You can then run the [genDeploy](https://github.com/jtorral/rocky9-pg17-bundle/blob/main/genDeploy.md) script
 
