@@ -1,61 +1,63 @@
-FROM --platform=linux/arm64 rockylinux:9
+# --- Builder stage: compile pgpool-II ---
+ARG TARGETARCH="aarch64"
+FROM rockylinux:9.3 AS builder
 
+# Repos and build deps (PGDG for postgresql17-devel, EPEL + CRB for libmemcached-devel)
+RUN dnf -y update \
+    && dnf install -y epel-release \
+    && dnf config-manager --set-enabled crb \
+    && rpm --import https://download.postgresql.org/pub/repos/yum/keys/RPM-GPG-KEY-PGDG \
+    && dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-aarch64/pgdg-redhat-repo-latest.noarch.rpm \
+    && dnf install -y --setopt=install_weak_deps=False \
+       gcc make wget \
+       postgresql17-devel \
+       libmemcached libmemcached-devel \
+       redhat-rpm-config annobin \
+    && dnf clean all && rm -rf /var/cache/dnf /tmp/*
 
-## THIS IS MISSING STUFF. LIKE PGPOOL AND A FEW OTHER THINGS
-## WORK IN PROGRESS
+# Build pgpool-II from source (configs to /etc/pgpool-II)
+WORKDIR /tmp/pgpool
+RUN wget https://www.pgpool.net/mediawiki/images/pgpool-II-4.5.4.tar.gz \
+    && tar -xzf pgpool-II-4.5.4.tar.gz --strip-components=1 \
+    && ./configure --prefix=/usr/local/pgpool --with-pgsql=/usr/pgsql-17/ --sysconfdir=/etc/pgpool-II \
+    && make && make install \
+    && rm -rf /tmp/pgpool*
 
+# --- Final stage: runtime image ---
+FROM rockylinux:9.3
 
-RUN \
-  dnf -y update \
-  && dnf install -y wget \
-  && dnf install -y curl \
-  && dnf install -y jq \
-  && dnf install -y vim \
-  && dnf install -y sudo \
-  && dnf install -y gnupg \
-  && dnf install -y openssh-server \
-  && dnf install -y openssh-clients \
-  && dnf install -y procps-ng \
-  && dnf install -y net-tools \
-  && dnf install -y iproute \
-  && dnf install -y less \
-  && dnf install -y watchdog \
-  && dnf -y install epel-release python3-pip dnf-plugins-core gnupg2 \
-  && rpm --import https://download.postgresql.org/pub/repos/yum/keys/RPM-GPG-KEY-PGDG \
-  && dnf config-manager --set-enabled powertools \
-  && dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-aarch64/pgdg-redhat-repo-latest.noarch.rpm \
-  && dnf -qy module disable postgresql \
-  && dnf install -y postgresql17-server \
-  && dnf install -y postgresql17-contrib \
-  && dnf install -y epel-release \
-  && dnf install -y libssh2 \
-  && dnf install -y pgbackrest \
-  && dnf install -y pgbouncer \
-  && python3 -m pip install --upgrade pip \ 
-  && python3 -m pip install 'patroni[etcd]==4.0.4' cdiff \
-  && dnf install -y haproxy \
-  && dnf install -y pg_repack_17 \
-  && dnf install -y pg_top \
-  && python3 -m pip install pg_activity==2.3.1 \
-  && dnf install -y repmgr_17
+# System updates, repos, and runtime packages
+RUN dnf -y update \
+    && dnf install -y epel-release \
+    && dnf config-manager --set-enabled crb \
+    && rpm --import https://download.postgresql.org/pub/repos/yum/keys/RPM-GPG-KEY-PGDG \
+    && dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-aarch64/pgdg-redhat-repo-latest.noarch.rpm \
+    && dnf install -y --setopt=install_weak_deps=False \
+       wget jq sudo gnupg openssh-server openssh-clients \
+       procps-ng iproute iputils less diffutils watchdog \
+       postgresql17-server postgresql17-contrib \
+       pgbackrest pgbouncer patroni-etcd pg_repack_17 pg_top repmgr_17 haproxy \
+       pgpool-II-pg17-extensions \
+    && dnf clean all && rm -rf /var/cache/dnf /tmp/*
 
+# Copy pgpool from builder (binaries and configs)
+COPY --from=builder /usr/local/pgpool /usr/local/pgpool
+COPY --from=builder /etc/pgpool-II /etc/pgpool-II
 
+# Create data and config directories (ensure paths exist before chown)
+RUN mkdir -p /pgdata/17/ \
+    && chown -R postgres:postgres /pgdata \
+    && chmod 0700 /pgdata \
+    && mkdir -p /etc/pgpool-II \
+    && chown -R postgres:postgres /etc/pgpool-II \
+    && touch /etc/pgbackrest.conf \
+    && chown postgres:postgres /etc/pgbackrest.conf \
+    && mkdir -p /var/log/{etcd,patroni} \
+    && chown -R postgres:postgres /var/log/{etcd,patroni} \
+    && mkdir -p /pgha/{config,certs,data/{etcd,postgres,pgbackrest}} \
+    && chown -R postgres:postgres /pgha
 
-RUN mkdir -p /pgdata/17/
-RUN chown -R postgres:postgres /pgdata
-RUN chmod 0700 /pgdata
-
-RUN chown -R postgres:postgres /etc/pgpool-II
-RUN chown -R postgres:postgres /etc/pgbackrest.conf
-
-RUN mkdir -p /var/log/etcd
-RUN mkdir -p /var/log/patroni
-RUN chown -R postgres:postgres /var/log/etcd
-RUN chown -R postgres:postgres /var/log/patroni
-
-RUN mkdir -p /pgha/{config,certs,data/{etcd,postgres,pgbackrest}}
-RUN chown -R postgres:postgres /pgha
-
+# --- COPY Files ---
 COPY pg_custom.conf /
 COPY pg_hba.conf /
 COPY pg_hba_md5.conf /
@@ -71,37 +73,21 @@ COPY failover.sh /
 COPY etcdSetup.sh /
 COPY patroniSetup.sh /
 COPY createRoles.sh /
-COPY startParoni /
-COPY stopParoni /
+COPY stopPatroni /
+COPY startPatroni /
 
-RUN chown postgres:postgres /recovery_1st_stage
-RUN chown postgres:postgres /follow_primary.sh
-RUN chown postgres:postgres /pgpool_remote_start
-RUN chown postgres:postgres /failover.sh
-RUN chown postgres:postgres /etcdSetup.sh
-RUN chown postgres:postgres /patroniSetup.sh
-RUN chown postgres:postgres /createRoles.sh
-RUN chown postgres:postgres /startPatroni
-RUN chown postgres:postgres /stopPatroni
+# --- Set Ownerships & Permissions ---
+RUN chown postgres:postgres /recovery_1st_stage /follow_primary.sh /pgpool_remote_start /failover.sh \
+    /etcdSetup.sh /patroniSetup.sh /createRoles.sh /stopPatroni /startPatroni \
+    && chmod 755 /recovery_1st_stage /follow_primary.sh /pgpool_remote_start /failover.sh \
+    /etcdSetup.sh /patroniSetup.sh /createRoles.sh /startPatroni /stopPatroni
 
-RUN chmod 755 /recovery_1st_stage
-RUN chmod 755 /follow_primary.sh
-RUN chmod 755 /pgpool_remote_start
-RUN chmod 755 /failover.sh
-RUN chmod 755 /etcdSetup.sh
-RUN chmod 755 /patroniSetup.sh
-RUN chmod 755 /createRoles.sh
-RUN chmod 755 /startPatroni
-RUN chmod 755 /stopPatroni
-
-
+# --- Expose Ports ---
 EXPOSE 22 80 443 5432 2379 2380 6032 6033 6132 6133 8432 5000 5001 8008 9999 9898 7000
 
-
+# --- Entrypoint ---
 COPY entrypoint.sh /
-
-RUN chmod +x /entrypoint.sh 
-
+RUN chmod +x /entrypoint.sh
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
