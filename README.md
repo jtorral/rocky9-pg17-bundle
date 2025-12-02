@@ -1,4 +1,5 @@
 
+  
 # rocky9-pg17-bundle
 
 
@@ -12,7 +13,6 @@ Included packages are
  - patroni-etcd  
  - pg_repack_17  
  - pg_top  
- - pg_activity  
  - repmgr_17  
  - haproxy 
  - proxysql pgpool-II-pg17  
@@ -22,6 +22,8 @@ Included packages are
 
 ## Quick start
 
+## UPDATE
+Finally added the ARM version so you can run on an **M*x*** Mackbook  or other ARM based systems
 
 
 ### 1. Docker Image Building and Container Creation
@@ -30,25 +32,52 @@ To create the Docker image, clone the repository from the provided GitHub link a
 
 https://github.com/jtorral/rocky9-pg17-bundle
 
-    docker build -t rocky9-pg17-bundle .
+### Build the image
 
-If you run into issues it could be related to versions and dependencies on OS images and packges. Try the following build command instead to identify the errors
+For regular **x86 system** run
 
     docker build --progress=plain -t rocky9-pg17-bundle .
 
+The above flag **`--progress=plain`** will help identify any issues by providing more details during the docker build process
 
-You can then run the [genDeploy](https://github.com/jtorral/rocky9-pg17-bundle/blob/main/genDeploy.md) script
+For the **ARM based system** build the image using these options
+
+    docker build -f DockerFileArm --progress=plain --build-arg TARGETARCH=aarch64 -t rocky9-pg17-bundle-arm .
+
+In the above command we ( Optionally change the image name to **rocky9-pg17-bundle-arm** but you could leave it as **rocky9-pg17-bundle** if you like.
+
+
+### Technical Note: AArch64 (ARM) Implementation
+
+**Due to the current lack of widespread AArch64 optimized RPM packages for certain dependencies, particularly when compared to standard x86 repositories, this Dockerfile had to be engineered to fetch and compile packages directly from source within the build environment. While this approach ensures functionality (validated on my MacBook Pro M4), please consider this an actively developing component. Feedback on any issues encountered during your ARM based build is highly appreciated.**
+
+
+You can then run the [genDeploy](https://github.com/jtorral/rocky9-pg17-bundle/blob/main/genDeploy.md) script included in this repo.
 
 To generate the run commands needed for your deployment.  It is advisable to use the genDeploy script. However, if you wish to generate your own docker run commands, you will need to follow steps below.
 
-## Optional if not using genDeploy from above.
+## Steps needed if not using genDeploy from above.
 
 After building the image, a **custom network** named `pgnet`  or whatever name you decide upon is created to allow communication between the containers.
+
+### Create the network
 
     docker network create pgnet
 
 
+### Create the containers
+
 The following demonstrates how to create three separate PostgreSQL containers (`pg1`, `pg2`, and `pg3`) and one Pgpool container (`pgpool`). 
+
+```
+docker run -p 6431:5432 --env=PGPASSWORD=postgres -v pg1-pgdata:/pgdata --hostname pg1 --network=pgnet --name=pg1 -dt rocky9-pg17-bundle
+
+docker run -p 6432:5432 --env=PGPASSWORD=postgres -v pg2-pgdata:/pgdata --hostname pg2 --network=pgnet --name=pg2 -dt rocky9-pg17-bundle
+
+docker run -p 6433:5432 --env=PGPASSWORD=postgres -v pg3-pgdata:/pgdata --hostname pg3 --network=pgnet --name=pg3 -dt rocky9-pg17-bundle
+```
+
+**The above are simple examples. Again, it is adviseabl to use the genDeploy scripts for consitency and ease of management.**
 
 Each `docker run` command uses specific flags:
 
@@ -67,15 +96,6 @@ Each `docker run` command uses specific flags:
 -   `-dt`  Runs the container in **detached mode** (`-d`) and allocates a pseudo-TTY (`-t`).
 
 
-```
-docker run -p 6431:5432 --env=PGPASSWORD=postgres -v pg1-pgdata:/pgdata --hostname pg1 --network=pgnet --name=pg1 -dt rocky9-pg17-bundle
-
-docker run -p 6432:5432 --env=PGPASSWORD=postgres -v pg2-pgdata:/pgdata --hostname pg2 --network=pgnet --name=pg2 -dt rocky9-pg17-bundle
-
-docker run -p 6433:5432 --env=PGPASSWORD=postgres -v pg3-pgdata:/pgdata --hostname pg3 --network=pgnet --name=pg3 -dt rocky9-pg17-bundle
-```
-
-
 ***Note*** 
 
 By default, the containers do not automatically start the PostgreSQL service. To start the service, you need to execute a command within the container or modify your docker run command to run it automatically. Just simply add the following to the docker run command.
@@ -91,14 +111,6 @@ docker run -p 6431:5432 --env=PGPASSWORD=postgres --env=PGSTART=1 -v pg1-pgdata:
 ```
 
 
-
-
-#### Create a Pgpool container
-
-```
-docker run -p 7432:5432 -p 9999:9999 -p 9898:9898 --env=PGPASSWORD=postgres -v pgpool-pgdata:/pgdata --hostname pgpool  --network=pgnet --name=pgpool -dt rocky9-pg17-bundle
-```
-Just like the Postgres containers,  pgpool is on the pgnet docker network.
 
 ### 2. Starting PostgreSQL within a Container
 
