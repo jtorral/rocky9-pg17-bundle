@@ -20,7 +20,16 @@ Included packages are
  - pgpool
 
 
-## Quick start
+## License and Credit
+
+This documentation is provided for personal, self paced training. If you plan to utilize this documentation outside of self training, for instance, as a base for creating additional training materials, tutorials, or public documentation you **must** give credit to postgressolutions.com and Jorge Torralba. Your cooperation helps support the creation of future educational content.
+
+## Support Our Work
+
+If you find significant value in this free training and feel that it has enhanced your understanding of high availability Postgres, please consider making a donation. Your support goes a long way toward producing and maintaining additional high quality, free training materials. You can donate here:
+
+https://www.paypal.com/donate/?hosted_button_id=J2HWPPWX8EBNC
+
 
 ## UPDATE
 Finally added the ARM version so you can run on an **M*x*** Mackbook  or other ARM based systems
