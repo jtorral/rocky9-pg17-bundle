@@ -1,41 +1,37 @@
 FROM rockylinux:9.3
 
-# --- System Updates, Base Utilities, and CRB Setup ---
-
+# --- 1. System Updates and Base Utilities ---
 RUN dnf -y update \
     && dnf install -y wget telnet jq vim sudo gnupg openssh-server openssh-clients \
-        procps-ng net-tools iproute iputils less diffutils watchdog \
-    # Install libmemcached and enable CRB in the same step
-    && dnf install -y https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os/Packages/l/libmemcached-awesome-1.1.0-12.el9.x86_64.rpm \
-    && dnf --enablerepo=crb install -y libmemcached-awesome \
-    # Clean up DNF cache
-    && dnf clean all && rm -rf /var/cache/dnf
+       procps-ng net-tools iproute iputils less diffutils watchdog \
+    && dnf clean all
 
-# --- Install EPEL Repository ---
-# EPEL must be installed in its own layer to ensure the repo is ready for the next step
+# --- 2. Enable CRB and EPEL ---
+# These provide the dependencies (like libmemcached-awesome) that 
+# the Postgres PGDG and PGPool repositories require.
+RUN dnf install -y 'dnf-command(config-manager)' epel-release \
+    && dnf config-manager --set-enabled crb \
+    && dnf clean all
 
-RUN dnf install -y epel-release \
-    && dnf clean all && rm -rf /var/cache/dnf
-
-# --- Install Postgres PGDG Repo and Core Packages ---
-# Using --nobest to handle potential OpenSSL dependency conflicts
-
+# --- 3. Install Postgres PGDG Repo and Core Packages ---
+# We disable the default postgresql module to ensure version 17 is used.
 RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
     && dnf -qy module disable postgresql \
     && dnf install -y --nobest postgresql17-server postgresql17-contrib \
-    && dnf clean all && rm -rf /var/cache/dnf
+    && dnf clean all
 
-# --- Install Remaining Postgres HA/Extension Tools using EPEL packages ---
-
+# --- 4. Install Postgres HA/Extension Tools ---
+# These are pulled from the PGDG and EPEL repositories.
 RUN dnf install -y libssh2 pgbackrest pgbouncer patroni-etcd \
     pg_repack_17 pg_top pg_activity repmgr_17 haproxy \
-    && dnf clean all && rm -rf /var/cache/dnf
+    && dnf clean all
 
-# --- Install PGPool ---
 
-RUN dnf install -y https://www.pgpool.net/yum/rpms/4.6/redhat/rhel-9-x86_64/pgpool-II-release-4.6-1.noarch.rpm \
-    && dnf install -y pgpool-II-pg17 pgpool-II-pg17-extensions \
-    && dnf clean all && rm -rf /var/cache/dnf
+# --- 5. Install PGPool-II ---
+RUN dnf install -y libmemcached-awesome \
+    && dnf install -y --allowerasing pgpool-II pgpool-II-pg17-extensions \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
 
 
 # --- Create data and config directories ---

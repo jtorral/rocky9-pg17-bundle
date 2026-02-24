@@ -155,21 +155,35 @@ cd /tmp
 rm -rf /tmp/etcd-download-test
 
 
-# Install latest proxysql 3.x
-
-cat > /etc/yum.repos.d/proxysql.repo << EOF
+# Check if ProxySQL binary exists before attempting install
+if [ ! -f "/usr/bin/proxysql" ]; then
+    echo "ProxySQL not found. Installing..."
+    
+    # Only create the repo file if it doesn't exist
+    if [ ! -f "/etc/yum.repos.d/proxysql.repo" ]; then
+        cat > /etc/yum.repos.d/proxysql.repo << EOF
 [proxysql]
 name=ProxySQL YUM repository
 baseurl=https://repo.proxysql.com/ProxySQL/proxysql-3.0.x/centos/\$releasever
 gpgcheck=1
 gpgkey=https://repo.proxysql.com/ProxySQL/proxysql-3.0.x/repo_pub_key
 EOF
+    fi
 
-dnf install -y proxysql
+    dnf install -y proxysql
+    
+    # Initial setup only on first install
+    mkdir -p /pgdata/proxysql
+    cp /proxysql.cnf /etc/
+    chown -R proxysql:proxysql /pgdata/proxysql
+else
+    echo "ProxySQL is already installed. Skipping installation."
+fi
 
-mkdir -p /pgdata/proxysql
-cp /proxysql.cnf /etc/
-chown -R proxysql:proxysql /pgdata/proxysql
+
+
+
+
 
 
 # Preconfigure some pgbackrest stuff
